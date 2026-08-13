@@ -3,9 +3,9 @@
 Document under test: **Red Herring Prospectus (KSH International Limited)**, `.docx`,
 1006 paragraphs, 76 tables, ~446k characters.
 
-All numbers below come from an **actual run** of the tool against the prospectus and
-an **independently annotated** ground truth. Nothing is fabricated. Categories that
-do not occur in the document are reported as *0-support*, not invented.
+All numbers below come from an actual run of the tool against the prospectus, scored
+against a manually annotated ground truth. Categories that do not occur in the document
+are reported as *0-support* rather than given made-up numbers.
 
 ## 1. What was redacted (full document)
 
@@ -26,22 +26,20 @@ unit-tested.
 
 ### 2.1 Ground-truth creation
 
-A full manual annotation of all 1006 paragraphs is unnecessary and error-prone within
-the 24-hour window. Instead we annotate a **stratified sample** designed to measure
-both recall and precision honestly:
+Annotating all 1006 paragraphs by hand would take too long and be error-prone in the
+24-hour window, so I annotated a sample chosen to test both recall and precision:
 
-* **PII-dense stratum** — the cover/contact blocks, the promoter/director tables and
-  the registered-office lines, i.e. the places where essentially all true PII lives.
-* **Prose stratum** — a seeded random sample of ordinary body paragraphs, included
-  specifically so that **false positives in non-PII text are counted**.
+* **PII-dense units** — the cover/contact blocks, the promoter/director tables and the
+  registered-office lines, where almost all of the real PII lives.
+* **Prose units** — a seeded random sample of ordinary body paragraphs, included so
+  that false positives in non-PII text are actually counted.
 
-This yields **70 units / 92 gold spans**. Every true PII span in each sampled unit was
-annotated by **reading the text** (`scripts/build_ground_truth.py`), independently of
-what the detectors produced. The annotation deliberately includes entities the
-detectors were expected to miss (a CEO named only in prose, firms without a legal
-suffix, Corporation-suffixed customers, address fragments), so recall is not
-flattered. Gold stores **category + character offsets only** — no raw PII values are
-committed.
+This gives **70 units / 92 gold spans**. I created the annotations by reading each
+sampled unit's text and recording the PII spans I expected (`scripts/build_ground_truth.py`),
+without looking at the detector output. I deliberately included entities I expected the
+detectors to miss (a CEO named only in prose, firms without a legal suffix,
+Corporation-suffixed customers, address fragments), so recall isn't flattered. The gold
+file stores category + character offsets only — no raw PII values are committed to it.
 
 ### 2.2 Span matching
 
@@ -55,15 +53,19 @@ gold spans are false negatives. Both modes are reported.
 
 ### 2.3 On raw accuracy (important caveat)
 
-Token-level accuracy is **0.9955**, but this number is intentionally **not** the
-headline. In a 446k-character document only a few hundred characters are PII, so the
-non-PII class dominates overwhelmingly — a detector that redacts *nothing* would still
-score ~0.99 accuracy. Accuracy is therefore reported only for completeness. The
-meaningful metrics for PII redaction are **per-category precision and recall**, because
-they separately penalise leaks (low recall) and over-redaction (low precision), which
-raw accuracy hides.
+Token-level accuracy is **0.9955**, but I don't treat it as the main metric. In a
+446k-character document only a few hundred characters are PII, so the non-PII text
+dominates — a detector that redacts almost nothing would still score around 0.99
+accuracy. I report it for completeness, but precision and recall per category are the
+useful numbers, because they separately show leaks (low recall) and over-redaction
+(low precision), which accuracy hides.
 
 ## 3. Results
+
+The main result is the stricter exact-offset matching: **precision 0.989, recall 0.989,
+F1 0.989** on the sample. With overlap matching the numbers rise to 1.000 / 1.000 /
+1.000, because the one remaining strict mismatch is a boundary difference in an address
+(the address is redacted; the offsets just differ by a few characters).
 
 ### Strict (exact-offset) matching
 
@@ -112,16 +114,18 @@ raw accuracy hides.
    1006 paragraphs. The sample is weighted toward PII-dense regions, so it is a strong
    test of recall on real PII while still checking prose for false positives — but it
    is a sample, and the true document-wide figures could differ slightly.
-2. **Iterative tuning risk.** Several rules were refined after inspecting misses on this
-   sample. The refinements are generalizable (comma-in-phone, legal suffixes, prose
-   anchors) and were re-checked against the **whole** document for new false positives,
-   but overlap = 1.0 should be read as "on this annotated sample" rather than a
-   guarantee on unseen prospectuses.
-3. **Structural NER.** Person/company detection leans on document structure; a novel
-   prospectus with different table layouts would need its anchors reviewed. This is the
-   deliberate tradeoff for high precision and zero heavyweight dependencies.
-4. **Over- vs under-redaction.** Where the tool errs it tends to **over-redact**
-   (extra address context, a company caught inside an address block) rather than leak
-   PII, which is the safer failure mode for a redaction tool. A full end-to-end leakage
-   scan of the output confirmed **zero** original emails, names, companies, phones or
-   addresses from the detected set remain in the redacted file.
+2. **Iterative tuning.** I refined several rules after seeing misses on this sample. The
+   fixes are fairly general (comma-in-phone, extra legal suffixes, prose name anchors)
+   and I re-checked them against the whole document for new false positives, but the
+   sample results are best read as "on this annotated sample" rather than a guarantee on
+   a different prospectus.
+3. **Structural name/company detection.** Person and company detection leans partly on
+   document structure, so a prospectus with different table layouts or phrasing would
+   need its anchors reviewed. This is the tradeoff I accepted for higher precision and
+   for avoiding a heavy NER dependency.
+4. **Over- vs under-redaction.** Where the tool errs it tends to over-redact (extra
+   address context, or a company caught inside an address block) rather than leak PII,
+   which is the safer failure mode for a redaction tool. In the leakage check, none of
+   the original emails, names, companies, phones or addresses from the detected set
+   remained in the redacted output. This covers the values the detectors found; it does
+   not prove that every possible PII value in any future document would be caught.
