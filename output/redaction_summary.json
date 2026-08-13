@@ -1,0 +1,18 @@
+{
+  "total_redactions": 486,
+  "by_category": {
+    "ADDRESS": 49,
+    "NAME": 160,
+    "EMAIL": 52,
+    "PHONE": 36,
+    "COMPANY": 189
+  },
+  "unique_entities": {
+    "ADDRESS": 41,
+    "NAME": 36,
+    "EMAIL": 26,
+    "PHONE": 18,
+    "COMPANY": 64
+  }
+}
+Redacted DOCX written to output/redacted.docx

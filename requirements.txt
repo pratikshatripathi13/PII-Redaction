@@ -1,0 +1,4 @@
+python-docx>=1.1.0    # read/write DOCX at run and cell level (formatting preservation)
+Faker>=24.0.0         # deterministic, format-plausible synthetic replacements
+PyYAML>=6.0           # policy configuration (config/default.yaml)
+pytest>=8.0.0         # test suite

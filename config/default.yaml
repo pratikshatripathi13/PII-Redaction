@@ -1,0 +1,60 @@
+# PII Redaction — default policy configuration
+# Every knob here is documented in the README. Nothing is hard-coded in the detectors.
+
+# Which PII categories to detect/redact. Toggling one off removes it from
+# detection AND from the evaluation scoring, so metrics stay honest.
+categories:
+  EMAIL: true
+  PHONE: true
+  NAME: true
+  COMPANY: true
+  ADDRESS: true
+  SSN: true          # ships, but does not occur in this document (reported as 0-support)
+  CREDIT_CARD: true  # ships, but does not occur in this document
+  DOB: true          # context-gated; no true DOB occurs in this document
+  IP: true           # ships, but does not occur in this document
+
+phone:
+  # Region hints for validation. "IN" enables +91 / STD-code / 10-digit-mobile logic.
+  regions: ["IN", "INTL"]
+
+company:
+  # Policy (per approved decision): redact identifiable organisations.
+  # The allowlist below suppresses purely *structural* references that a prospectus
+  # needs to remain legible and that are NOT the issuer's private counterparties —
+  # regulators, exchanges and statutory bodies. This is an explicit, logged exclusion,
+  # not blanket leniency toward well-known firms. Bankers/registrar/auditor/legal
+  # counsel ARE redacted.
+  allowlist:
+    - "SEBI"
+    - "Securities and Exchange Board of India"
+    - "BSE"
+    - "BSE Limited"
+    - "NSE"
+    - "National Stock Exchange of India Limited"
+    - "Reserve Bank of India"
+    - "RBI"
+    - "Registrar of Companies"
+    - "RoC"
+    - "Stock Exchanges"
+    - "Government of India"
+    - "Ministry of Corporate Affairs"
+
+# India-specific identifiers (DIN, CIN, PIN, PAN). Per approved decision these are
+# OUT of the primary PII metrics. The architecture supports them (add a regex
+# detector + category), but they are disabled by default and documented as scope.
+extended_identifiers:
+  DIN: false
+  CIN: false
+  PIN: false
+  PAN: false
+
+pseudonymization:
+  # Salt makes audit identifiers non-reversible in committed artifacts and makes
+  # replacements reproducible across runs. Override with env PII_SALT for a secret salt.
+  salt: "pii-redaction-default-salt-v1"
+
+evaluation:
+  # "overlap" = a predicted span counts as a hit if it overlaps a gold span of the
+  # same category (fair for fuzzy NAME/ADDRESS boundaries). "strict" = exact offsets.
+  match_mode: "overlap"
