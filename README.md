@@ -1,7 +1,7 @@
 # PII Redaction Tool
 
 Reads a `.docx` file, finds PII, and writes a redacted copy where each value gets swapped
-for a realistic fake — so `Rashi Patil` becomes `John Doe` and `+91 9876543210` becomes
+for a realistic fake - so `Rashi Patil` becomes `John Doe` and `+91 9876543210` becomes
 `+91 1234567645`. I built and tested this against the Red Herring Prospectus (KSH
 International Limited) that was provided with the assignment.
 
