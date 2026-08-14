@@ -1,4 +1,9 @@
 python-docx>=1.1.0    # read/write DOCX at run and cell level (formatting preservation)
 Faker>=24.0.0         # deterministic, format-plausible synthetic replacements
 PyYAML>=6.0           # policy configuration (config/default.yaml)
+streamlit>=1.30.0     # web app (app.py)
 pytest>=8.0.0         # test suite
+
+# Optional: enable the secondary spaCy NER detector (off by default).
+#   pip install spacy && python -m spacy download en_core_web_sm
+# spacy>=3.7.0

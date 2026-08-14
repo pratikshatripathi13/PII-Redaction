@@ -30,4 +30,12 @@ def build_detectors(settings: Settings, doc, full_text: str) -> list:
         detectors.append(CompanyDetector(settings.company_allowlist))
     if settings.categories.get("ADDRESS"):
         detectors.append(AddressDetector())
+
+    # Optional secondary spaCy NER (off by default; no-op if the model isn't installed).
+    if getattr(settings, "use_spacy_ner", False):
+        from .spacy_detector import build_spacy_detector
+        ner_cats = [c for c in ("NAME", "COMPANY", "ADDRESS") if settings.categories.get(c)]
+        spacy_det = build_spacy_detector(ner_cats, settings.spacy_model)
+        if spacy_det is not None:
+            detectors.append(spacy_det)
     return detectors, kb

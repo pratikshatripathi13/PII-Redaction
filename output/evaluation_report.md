@@ -1,131 +1,90 @@
-# PII Redaction — Evaluation Report
+# Evaluation Report — PII Redaction Tool
 
-Document under test: **Red Herring Prospectus (KSH International Limited)**, `.docx`,
-1006 paragraphs, 76 tables, ~446k characters.
+## 1. Document under test
 
-All numbers below come from an actual run of the tool against the prospectus, scored
-against a manually annotated ground truth. Categories that do not occur in the document
-are reported as *0-support* rather than given made-up numbers.
+I tested the tool on the supplied Red Herring Prospectus (KSH International Limited). It
+is a `.docx` file with 1006 paragraphs and 76 tables, about 446k characters. It contains
+email addresses, phone numbers, person names, company names, and postal addresses. SSN,
+credit card, IP, and date of birth do not appear in it.
 
-## 1. What was redacted (full document)
+The results below come from running `python scripts/run_evaluation.py` on this document.
 
-| Category | Occurrences redacted | Unique entities |
+## 2. Evaluation method
+
+I built the ground truth by reading a sample of the document and writing down the PII
+spans I expected, without looking at the detector output. The sample has 70 text units
+and 92 spans. Most of it comes from the parts of the document where PII is concentrated —
+contact blocks, promoter and director tables, and the registered office — but I also
+included some ordinary paragraphs so that false positives in normal text would show up.
+The gold file stores the category and character offsets, not the original text.
+
+A prediction is correct when it matches a gold span of the same category. I report two
+matching modes:
+
+- Strict: the predicted and gold spans have the same start and end offsets.
+- Overlap: the two spans overlap by at least one character.
+
+I added overlap because name and address boundaries are not always clear-cut, so exact
+offsets can be too harsh.
+
+I also computed raw token accuracy (0.9955), but it isn't a useful headline number here.
+Almost all of the document is non-PII text, so even a detector that found very little
+would still score close to 100%. Precision and recall per category say more about how the
+detectors actually perform.
+
+## 3. Results
+
+Sample metrics:
+
+| Matching | Precision | Recall | F1 | TP | FP | FN |
+|---|---|---|---|---|---|---|
+| Strict | 0.989 | 0.989 | 0.989 | 91 | 1 | 1 |
+| Overlap | 1.000 | 1.000 | 1.000 | 92 | 0 | 0 |
+
+Per category (strict):
+
+| Category | Precision | Recall | Support |
+|---|---|---|---|
+| EMAIL | 1.000 | 1.000 | 18 |
+| PHONE | 1.000 | 1.000 | 16 |
+| NAME | 1.000 | 1.000 | 10 |
+| COMPANY | 1.000 | 1.000 | 30 |
+| ADDRESS | 0.944 | 0.944 | 18 |
+| SSN / CREDIT_CARD / DOB / IP | n/a | n/a | 0 |
+
+SSN, credit card, date of birth, and IP have no support because they don't occur in this
+document, so there was nothing for those detectors to match.
+
+Running the redactor on the whole prospectus (not just the sample) produced 486
+replacements:
+
+| Category | Redactions | Unique values |
 |---|---|---|
 | EMAIL | 52 | 26 |
 | PHONE | 36 | 18 |
 | NAME | 160 | 36 |
 | COMPANY | 189 | 64 |
 | ADDRESS | 49 | 41 |
-| **Total** | **486** | — |
-
-SSN, CREDIT_CARD, IP and DOB do not occur in this document (0 redactions) — it is an
-Indian financial prospectus, not a US ticket log. Their detectors still ship and are
-unit-tested.
-
-## 2. Evaluation methodology
-
-### 2.1 Ground-truth creation
-
-Annotating all 1006 paragraphs by hand would take too long and be error-prone in the
-24-hour window, so I annotated a sample chosen to test both recall and precision:
-
-* **PII-dense units** — the cover/contact blocks, the promoter/director tables and the
-  registered-office lines, where almost all of the real PII lives.
-* **Prose units** — a seeded random sample of ordinary body paragraphs, included so
-  that false positives in non-PII text are actually counted.
-
-This gives **70 units / 92 gold spans**. I created the annotations by reading each
-sampled unit's text and recording the PII spans I expected (`scripts/build_ground_truth.py`),
-without looking at the detector output. I deliberately included entities I expected the
-detectors to miss (a CEO named only in prose, firms without a legal suffix,
-Corporation-suffixed customers, address fragments), so recall isn't flattered. The gold
-file stores category + character offsets only — no raw PII values are committed to it.
-
-### 2.2 Span matching
-
-A prediction matches a gold span when they share the same unit, the same category, and:
-
-* **strict** — identical start/end offsets, or
-* **overlap** — any character overlap (fair for boundary-fuzzy NAME/ADDRESS/COMPANY).
-
-Matching is greedy one-to-one; unmatched predictions are false positives, unmatched
-gold spans are false negatives. Both modes are reported.
-
-### 2.3 On raw accuracy (important caveat)
-
-Token-level accuracy is **0.9955**, but I don't treat it as the main metric. In a
-446k-character document only a few hundred characters are PII, so the non-PII text
-dominates — a detector that redacts almost nothing would still score around 0.99
-accuracy. I report it for completeness, but precision and recall per category are the
-useful numbers, because they separately show leaks (low recall) and over-redaction
-(low precision), which accuracy hides.
-
-## 3. Results
-
-The main result is the stricter exact-offset matching: **precision 0.989, recall 0.989,
-F1 0.989** on the sample. With overlap matching the numbers rise to 1.000 / 1.000 /
-1.000, because the one remaining strict mismatch is a boundary difference in an address
-(the address is redacted; the offsets just differ by a few characters).
-
-### Strict (exact-offset) matching
-
-| Category | TP | FP | FN | Precision | Recall | F1 | Support |
-|---|---|---|---|---|---|---|---|
-| EMAIL | 18 | 0 | 0 | 1.000 | 1.000 | 1.000 | 18 |
-| PHONE | 16 | 0 | 0 | 1.000 | 1.000 | 1.000 | 16 |
-| NAME | 10 | 0 | 0 | 1.000 | 1.000 | 1.000 | 10 |
-| COMPANY | 30 | 0 | 0 | 1.000 | 1.000 | 1.000 | 30 |
-| ADDRESS | 17 | 1 | 1 | 0.944 | 0.944 | 0.944 | 18 |
-| SSN / CREDIT_CARD / DOB / IP | 0 | 0 | 0 | n/a | n/a | n/a | 0 (not present) |
-| **Overall (micro)** | **91** | **1** | **1** | **0.989** | **0.989** | **0.989** | **92** |
-
-### Overlap matching
-
-| Category | TP | FP | FN | Precision | Recall | F1 | Support |
-|---|---|---|---|---|---|---|---|
-| EMAIL | 18 | 0 | 0 | 1.000 | 1.000 | 1.000 | 18 |
-| PHONE | 16 | 0 | 0 | 1.000 | 1.000 | 1.000 | 16 |
-| NAME | 10 | 0 | 0 | 1.000 | 1.000 | 1.000 | 10 |
-| COMPANY | 30 | 0 | 0 | 1.000 | 1.000 | 1.000 | 30 |
-| ADDRESS | 18 | 0 | 0 | 1.000 | 1.000 | 1.000 | 18 |
-| SSN / CREDIT_CARD / DOB / IP | 0 | 0 | 0 | n/a | n/a | n/a | 0 (not present) |
-| **Overall (micro)** | **92** | **0** | **0** | **1.000** | **1.000** | **1.000** | **92** |
 
 ## 4. Error analysis
 
-* **EMAIL / PHONE** — perfect on the sample. Phone required a fix so that numbers in a
-  comma-separated list (`+91 22 30752929, +91 22 30752928`) are all caught.
-* **NAME** — perfect on the sample after adding a `being <name>` anchor (CEO named only
-  in prose) and first+last aliases (`Kushal Subbayya Hegde` also appears as
-  `Kushal Hegde`).
-* **COMPANY** — perfect on the sample after adding `Corporation/Corp/Co./Associates`
-  suffixes and parenthesis handling (`Transformers & Rectifiers (India) Limited`).
-  The single hardest residual case type is a firm referred to only by an abbreviation
-  with no legal suffix (e.g. "Nuvama" standing alone), which can be missed.
-* **ADDRESS** — the only category below 1.0 under strict matching. The one strict FP/FN
-  pair is a **boundary** difference (the detector redacts a slightly larger block than
-  the annotated span); overlap matching confirms the address itself is fully covered.
-  Addresses split across paragraphs (a bare `Pune – 411 0xx` line) are handled by a
-  city+PIN fallback but remain the fuzziest category.
+The one error under strict matching is an address. The detected span overlaps the
+annotated address, but the start and end offsets are not identical, so strict matching
+records it as one false positive and one false negative while overlap matching counts it
+as correct. The address itself is still redacted.
+
+Email, phone, name, and company match the gold spans exactly on the sample. A few cases
+were missed in earlier versions and then fixed: phone numbers followed by a comma in a
+list, a name that only appeared in running text, short forms of promoter names, and
+companies with less common suffixes.
 
 ## 5. Limitations
 
-1. **Sampled evaluation.** Metrics are computed on a 70-unit stratified sample, not all
-   1006 paragraphs. The sample is weighted toward PII-dense regions, so it is a strong
-   test of recall on real PII while still checking prose for false positives — but it
-   is a sample, and the true document-wide figures could differ slightly.
-2. **Iterative tuning.** I refined several rules after seeing misses on this sample. The
-   fixes are fairly general (comma-in-phone, extra legal suffixes, prose name anchors)
-   and I re-checked them against the whole document for new false positives, but the
-   sample results are best read as "on this annotated sample" rather than a guarantee on
-   a different prospectus.
-3. **Structural name/company detection.** Person and company detection leans partly on
-   document structure, so a prospectus with different table layouts or phrasing would
-   need its anchors reviewed. This is the tradeoff I accepted for higher precision and
-   for avoiding a heavy NER dependency.
-4. **Over- vs under-redaction.** Where the tool errs it tends to over-redact (extra
-   address context, or a company caught inside an address block) rather than leak PII,
-   which is the safer failure mode for a redaction tool. In the leakage check, none of
-   the original emails, names, companies, phones or addresses from the detected set
-   remained in the redacted output. This covers the values the detectors found; it does
-   not prove that every possible PII value in any future document would be caught.
+- The metrics come from the sampled units, not the full document, so numbers on other
+  files may differ.
+- Address boundaries are the main source of error and can include or drop a few
+  characters.
+- Name and company detection depends on the document structure, so a name that only
+  appears in free text, or a company written without a legal suffix, can be missed.
+- The 1.000 overlap score means the detected spans covered the annotated PII in this
+  sample. It does not mean the detector is perfect on other documents.

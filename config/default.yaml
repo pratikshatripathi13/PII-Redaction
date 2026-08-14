@@ -58,3 +58,12 @@ evaluation:
   # "overlap" = a predicted span counts as a hit if it overlaps a gold span of the
   # same category (fair for fuzzy NAME/ADDRESS boundaries). "strict" = exact offsets.
   match_mode: "overlap"
+
+ner:
+  # Optional secondary spaCy NER detector for NAME/COMPANY/ADDRESS. OFF by default:
+  # the rule-based detectors are the primary system and all reported metrics use them.
+  # When enabled, spaCy runs alongside the rules and its spans are merged in. Requires:
+  #   pip install spacy && python -m spacy download en_core_web_sm
+  # If spaCy or the model is not installed, this flag is ignored (graceful no-op).
+  use_spacy: false
+  model: "en_core_web_sm"

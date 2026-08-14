@@ -16,6 +16,8 @@ class Settings:
     extended_identifiers: dict
     salt: str
     match_mode: str
+    use_spacy_ner: bool = False           # optional secondary NER, off by default
+    spacy_model: str = "en_core_web_sm"
 
     @property
     def enabled_categories(self) -> list:
@@ -26,6 +28,7 @@ def load_settings(path: str | os.PathLike) -> Settings:
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     # Environment override for a secret salt (keeps audit IDs irreversible).
     salt = os.environ.get("PII_SALT", data.get("pseudonymization", {}).get("salt", "salt"))
+    ner = data.get("ner", {})
     return Settings(
         categories=data.get("categories", {}),
         phone_regions=data.get("phone", {}).get("regions", ["IN", "INTL"]),
@@ -33,4 +36,6 @@ def load_settings(path: str | os.PathLike) -> Settings:
         extended_identifiers=data.get("extended_identifiers", {}),
         salt=salt,
         match_mode=data.get("evaluation", {}).get("match_mode", "overlap"),
+        use_spacy_ner=bool(ner.get("use_spacy", False)),
+        spacy_model=ner.get("model", "en_core_web_sm"),
     )

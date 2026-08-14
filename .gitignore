@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.streamlit/secrets.toml
+*.egg-info/
+.venv/
+venv/
+~$*
+output/_*.md
+output/_*.json
+output/redaction_summary.json
+Enterprise Data - Assignment.docx
