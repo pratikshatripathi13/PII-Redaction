@@ -7,7 +7,7 @@ International Limited) that was provided with the assignment.
 
 ## Problem
 
-The prospectus is a real DOCX — 1006 paragraphs, 76 tables. It's full of contact details,
+The prospectus is a real DOCX - 1006 paragraphs, 76 tables. It's full of contact details,
 promoter and director info, addresses. The task was to detect and replace the required PII
 categories, keep the formatting intact, and actually report precision/recall from a real
 evaluation run instead of just guessing numbers that sound reasonable.
@@ -15,7 +15,7 @@ evaluation run instead of just guessing numbers that sound reasonable.
 ## Approach
 
 I split this into two problems because they're genuinely different. Emails, phone numbers,
-SSNs, credit cards, IPs, dates — these have predictable shapes, so regex and a bit of
+SSNs, credit cards, IPs, dates - these have predictable shapes, so regex and a bit of
 validation logic gets you most of the way there. Names, companies, addresses are messier.
 No fixed shape, so you need context to catch them reliably.
 
@@ -34,29 +34,29 @@ Indian names or Indian company/address formats — it kept wanting to tag words 
 or "Equity" as entities when I tried it on a few sample paragraphs. And it's a ~400MB
 dependency for something my rule-based approach already handles well here. If a future
 document needed it, the detector interface is generic enough that a spaCy-based detector
-could slot in later — just wasn't worth it for this one.
+could slot in later - just wasn't worth it for this one.
 
 ## Detection methods
 
-Email, phone, SSN, credit card, IP — regex with validation. Credit cards get checked
+Email, phone, SSN, credit card, IP - regex with validation. Credit cards get checked
 against the Luhn algorithm, IP octets get range-checked (0–255), and phone candidates get
 filtered by digit count so PIN codes and comma-separated financial figures don't
 accidentally match.
 
-Date of birth — only counts as a DOB if a birth-related word ("date of birth," "born,"
-"aged") shows up right before it. This mattered a lot, actually — without that check, all
+Date of birth - only counts as a DOB if a birth-related word ("date of birth," "born,"
+"aged") shows up right before it. This mattered a lot, actually without that check, all
 318 ordinary dates in the document (incorporation dates, financial-year ends, etc.) would've
 come back as false positives.
 
-Names — pulled from the structured sections mentioned above, plus I handle first+last short
+Names - pulled from the structured sections mentioned above, plus I handle first+last short
 forms, since the document refers to the same person as "Kushal Subbayya Hegde" in one place
 and just "Kushal Hegde" somewhere else.
 
-Companies — matched on legal suffixes (Limited, Ltd, LLP, Corporation, Corp, Co.,
+Companies - matched on legal suffixes (Limited, Ltd, LLP, Corporation, Corp, Co.,
 Associates), with some connector handling so something like "CG Power and Industrial
 Solutions Limited" doesn't get chopped into pieces.
 
-Addresses — looks for an address keyword (Road, Marg, Society, Plot, etc.) followed by a
+Addresses - looks for an address keyword (Road, Marg, Society, Plot, etc.) followed by a
 6-digit PIN code. There's also a city+PIN fallback for address lines that get split weirdly
 across paragraphs.
 
@@ -75,14 +75,14 @@ mentions of the same entity without the log itself containing actual PII.
 
 ## DOCX handling
 
-I do replacements at the run level instead of rewriting whole paragraphs, so formatting —
-bold, headings, table cells — survives. Text that isn't touched stays in its original run;
+I do replacements at the run level instead of rewriting whole paragraphs, so formatting -
+bold, headings, table cells - survives. Text that isn't touched stays in its original run;
 each replacement gets written into the run where the PII actually started.
 
 Ran into some genuinely annoying DOCX quirks while testing this. Merged table cells were
 causing some paragraphs to get processed twice. Empty runs were causing a replacement to get
 written more than once. Emails split across multiple runs were getting mangled mid-string.
-Took a while to track these down — fixed it by de-duplicating paragraphs by their XML path
+Took a while to track these down - fixed it by de-duplicating paragraphs by their XML path
 and making sure each replacement only gets written once. After that, the output matches the
 original on paragraph count (1006), table count (76), and bold-run count (527), so I know the
 structure held up.
@@ -117,12 +117,12 @@ paragraphs so false positives in normal text would actually get caught if they e
 numbers by category are in `output/evaluation_report.md`.
 
 A prediction counts as correct when it matches a gold span in the same category. I report two
-matching modes — strict (exact character offsets) and overlap (any overlap counts) — because
+matching modes - strict (exact character offsets) and overlap (any overlap counts) - because
 honestly, name and address boundaries are a bit subjective, and I didn't want to hide that
 behind one number.
 
 I also computed raw accuracy but didn't lean on it, since most of the document is non-PII
-text — a detector that flagged almost nothing would still score high on accuracy. Precision
+text - a detector that flagged almost nothing would still score high on accuracy. Precision
 and recall per category tell you a lot more.
 
 ## Results
@@ -152,13 +152,13 @@ Address boundaries are the fuzziest part of this — the redacted span sometimes
 of extra surrounding words. Better to over-redact than leak, so I'm okay with that trade-off,
 but it's worth being upfront about.
 
-A company referred to only by a short name with no legal suffix — "Nuvama" on its own, for
-instance — can slip through.
+A company referred to only by a short name with no legal suffix - "Nuvama" on its own, for
+instance - can slip through.
 
 Name detection leans partly on document structure, so someone who only appears once in
 free-form prose with no surrounding cue could get missed.
 
-The evaluation only covers a sample, not all 1006 paragraphs — and I'll be honest, I tweaked
+The evaluation only covers a sample, not all 1006 paragraphs - and I'll be honest, I tweaked
 some of the detection rules after seeing what the sample caught and missed. So these numbers
 are close to a best case for this document specifically, not a promise about how it'd perform
 on something else.
