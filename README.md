@@ -30,7 +30,7 @@ the rest of the document for everywhere those same names show up again.
 I did look at this. Decided against it, for a few reasons. Most of the names/companies/
 addresses in this doc show up in tables and fixed phrasings anyway, which my rules handle
 more precisely than a general model would. spaCy's English model also isn't great with
-Indian names or Indian company/address formats — it kept wanting to tag words like "Board"
+Indian names or Indian company/address formats - it kept wanting to tag words like "Board"
 or "Equity" as entities when I tried it on a few sample paragraphs. And it's a ~400MB
 dependency for something my rule-based approach already handles well here. If a future
 document needed it, the detector interface is generic enough that a spaCy-based detector
@@ -90,19 +90,19 @@ structure held up.
 ## Policy decisions
 
 Company names get redacted when they identify a real entity. There's a small allowlist in
-`config/default.yaml` for structural references — SEBI, BSE, NSE, RBI, RoC — since those are
+`config/default.yaml` for structural references - SEBI, BSE, NSE, RBI, RoC - since those are
 regulators/exchanges, not parties whose privacy is at stake. Banks, the registrar, auditors,
 legal counsel all get redacted. I didn't leave a company unredacted just because it's
 well-known or big; the allowlist is explicit and configurable, not a shortcut.
 
-Indian identifiers — DIN, CIN, PIN, PAN — aren't counted in the main PII metrics since they
+Indian identifiers — DIN, CIN, PIN, PAN - aren't counted in the main PII metrics since they
 weren't in the assignment's required categories. Would be easy to add (one regex detector,
 one category), and the detector logic is there, just switched off by default in the config.
 
 ## Categories present vs. absent
 
 The prospectus actually contains EMAIL, PHONE, NAME, COMPANY, and ADDRESS. SSN, CREDIT_CARD,
-IP, and DOB don't show up at all — makes sense, it's an Indian financial filing, not a
+IP, and DOB don't show up at all - makes sense, it's an Indian financial filing, not a
 US-style ticket log. The detectors for those four still run and have their own unit tests;
 in the evaluation they just show up as 0-support instead of me making up numbers to fill the
 gap.
@@ -110,7 +110,7 @@ gap.
 ## Evaluation
 
 I built the ground truth by manually reading through a sample of the document and writing
-down every PII span I could find — before looking at what the detector output. Sample size:
+down every PII span I could find - before looking at what the detector output. Sample size:
 70 text units, 92 spans, weighted toward the PII-dense sections (contact blocks,
 promoter/director tables, registered office) but also including a random spread of ordinary
 paragraphs so false positives in normal text would actually get caught if they existed. Full
