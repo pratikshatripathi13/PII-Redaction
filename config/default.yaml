@@ -66,4 +66,4 @@ ner:
   #   pip install spacy && python -m spacy download en_core_web_sm
   # If spaCy or the model is not installed, this flag is ignored (graceful no-op).
   use_spacy: false
-  model: "en_core_web_sm"
+  model: "en_core_web_md"

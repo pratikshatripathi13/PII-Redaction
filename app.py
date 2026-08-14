@@ -181,7 +181,7 @@ with st.expander("Options"):
     use_spacy = st.checkbox(
         "Use spaCy NER (experimental)", value=False,
         help="Optional secondary model for names/companies/addresses. Requires spaCy and "
-             "en_core_web_sm; ignored otherwise. Rule-based detectors are the default.")
+             "en_core_web_md; ignored otherwise. Rule-based detectors are the default.")
     st.caption("The original file is never modified — redaction runs on a copy.")
 
 if st.button("▮  Redact Document", type="primary", use_container_width=True):

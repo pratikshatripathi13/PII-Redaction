@@ -4,6 +4,6 @@ PyYAML>=6.0           # policy configuration (config/default.yaml)
 streamlit>=1.30.0     # web app (app.py)
 pytest>=8.0.0         # test suite
 
-# Optional: enable the secondary spaCy NER detector (off by default).
-#   pip install spacy && python -m spacy download en_core_web_sm
-# spacy>=3.7.0
+# Optional secondary spaCy NER detector (medium English model).
+spacy>=3.8,<3.9
+https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl
